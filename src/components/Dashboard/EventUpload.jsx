@@ -19,7 +19,7 @@ export default function EventUpload() {
       const data = XLSX.utils.sheet_to_json(ws);
 
       try {
-        await axios.post('/api/events/upload', { events: data });
+        await axios.post('/api/calendar/upload', { events: data });
         alert('Events uploaded successfully!');
       } catch (error) {
         console.error(error);

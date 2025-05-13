@@ -7,7 +7,7 @@ export default function EventDelete() {
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`/api/events/delete/${eventId}`);
+      await axios.delete(`/api/calendar/${eventId}`);
       alert('Event deleted successfully!');
     } catch (error) {
       console.error(error);

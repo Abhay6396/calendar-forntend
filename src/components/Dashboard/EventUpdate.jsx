@@ -8,7 +8,7 @@ export default function EventUpdate() {
 
   const handleUpdate = async () => {
     try {
-      await axios.put(`/api/events/update/${eventId}`, { title: newTitle });
+      await axios.put(`/api/calendar/${eventId}`, { title: newTitle });
       alert('Event updated successfully!');
     } catch (error) {
       console.error(error);

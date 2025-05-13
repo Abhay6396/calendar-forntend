@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import API from '../../api/axios';
 import {
   Box, Grid, Paper, Typography, Button, TextField,
   Dialog, DialogTitle, DialogContent, DialogActions,
@@ -17,6 +18,8 @@ export default function Dashboard() {
   const [selectedSchool, setSelectedSchool] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [eventTitle, setEventTitle] = useState('');
+  const [newSchoolName, setNewSchoolName] = useState('');
+  const [allSchoolsFile, setAllSchoolsFile] = useState(null);
 
   const handleEditClick = () => {
     setEditOpen(true);
@@ -37,6 +40,47 @@ export default function Dashboard() {
       title: eventTitle
     });
     handleClose();
+  };
+
+  const handleCreateSchool = async () => {
+    if (!newSchoolName.trim()) {
+      alert('Please enter a school name');
+      return;
+    }
+
+    try {
+      const response = await API.post('/schools/create', { name: newSchoolName });
+      console.log('School created:', response.data);
+      alert('School created successfully');
+      setNewSchoolName('');
+    } catch (error) {
+      console.error(error);
+      alert('Error creating school');
+    }
+  };
+
+  const handleAllSchoolUpload = async () => {
+    if (!allSchoolsFile) {
+      alert("Please select a file to upload");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", allSchoolsFile);
+
+    try {
+      const response = await API.post('/schools/upload-all', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      alert("Excel uploaded successfully");
+      console.log(response.data);
+      setAllSchoolsFile(null); // reset file
+    } catch (error) {
+      console.error(error);
+      alert("Failed to upload Excel");
+    }
   };
 
   return (
@@ -92,19 +136,43 @@ export default function Dashboard() {
               Delete Selected Event
             </Button>
 
+            {/* Upload Excel for All Schools */}
             <Button
               variant="contained"
               color="primary"
               startIcon={<UploadFileIcon />}
+              component="label"
             >
               Upload Excel for All Schools
+              <input
+                type="file"
+                hidden
+                accept=".xlsx,.xls,.csv"
+                onChange={(e) => setAllSchoolsFile(e.target.files[0])}
+              />
+            </Button>
+            <Button
+              variant="contained"
+              color="success"
+              disabled={!allSchoolsFile}
+              onClick={handleAllSchoolUpload}
+            >
+              Submit All Schools Excel
             </Button>
 
-            <TextField label="New School Name" variant="outlined" fullWidth />
+            {/* Create School */}
+            <TextField
+              label="New School Name"
+              variant="outlined"
+              fullWidth
+              value={newSchoolName}
+              onChange={(e) => setNewSchoolName(e.target.value)}
+            />
             <Button
               variant="contained"
               color="success"
               startIcon={<SchoolIcon />}
+              onClick={handleCreateSchool}
             >
               Create School
             </Button>
