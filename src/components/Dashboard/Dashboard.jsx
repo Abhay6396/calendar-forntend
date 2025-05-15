@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import API from '../../api/axios';
 import {
   Box, Grid, Paper, Typography, Button, TextField,
@@ -20,26 +20,39 @@ export default function Dashboard() {
   const [eventTitle, setEventTitle] = useState('');
   const [newSchoolName, setNewSchoolName] = useState('');
   const [allSchoolsFile, setAllSchoolsFile] = useState(null);
+  const [schoolList, setSchoolList] = useState([]);
+  const [selectedEventId, setSelectedEventId] = useState('');
 
   const handleEditClick = () => {
+    if (!selectedEventId) {
+      alert('Please select an event from the calendar first.');
+      return;
+    }
     setEditOpen(true);
   };
 
   const handleClose = () => {
     setEditOpen(false);
+    setSelectedEventId('');
     setSelectedSchool('');
     setSelectedDate(new Date());
     setEventTitle('');
   };
 
-  const handleSave = () => {
-    // Handle save logic here
-    console.log({
-      school: selectedSchool,
-      date: selectedDate,
-      title: eventTitle
-    });
-    handleClose();
+  const handleSave = async () => {
+    try {
+      const response = await API.put(`/calendar/${selectedEventId}`, {
+        school: selectedSchool,
+        title: eventTitle,
+        date: selectedDate.toISOString()
+      });
+
+      alert("Event updated successfully!");
+      handleClose();
+    } catch (error) {
+      console.error('Error updating event:', error.response?.data || error.message);
+      alert("Failed to update event.");
+    }
   };
 
   const handleCreateSchool = async () => {
@@ -50,9 +63,9 @@ export default function Dashboard() {
 
     try {
       const response = await API.post('/schools/create', { name: newSchoolName });
-      console.log('School created:', response.data);
       alert('School created successfully');
       setNewSchoolName('');
+      fetchSchools();
     } catch (error) {
       console.error(error);
       alert('Error creating school');
@@ -70,18 +83,28 @@ export default function Dashboard() {
 
     try {
       const response = await API.post('/schools/upload-all', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
       alert("Excel uploaded successfully");
-      console.log(response.data);
-      setAllSchoolsFile(null); // reset file
+      setAllSchoolsFile(null);
     } catch (error) {
       console.error(error);
       alert("Failed to upload Excel");
     }
   };
+
+  const fetchSchools = async () => {
+    try {
+      const res = await API.get('/schools/all');
+      setSchoolList(res.data);
+    } catch (error) {
+      console.error('Error fetching schools:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchSchools();
+  }, []);
 
   return (
     <Box sx={{ padding: 2 }}>
@@ -96,8 +119,37 @@ export default function Dashboard() {
             <Typography variant="h6" gutterBottom>
               Event Calendar
             </Typography>
+
+            <FormControl fullWidth sx={{ mt: 1, mb: 2 }}>
+              <InputLabel id="school-filter-label">Filter by School</InputLabel>
+              <Select
+                labelId="school-filter-label"
+                value={selectedSchool}
+                label="Filter by School"
+                onChange={(e) => setSelectedSchool(e.target.value)}
+              >
+                <MenuItem value="">All-Schools</MenuItem>
+                {schoolList.map((school) => (
+                  <MenuItem key={school._id} value={school._id}>
+                    {school.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
             <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
-              <Calendar small />
+              <Calendar
+                small
+                selectedDate={selectedDate}
+                onDateChange={setSelectedDate}
+                schoolId={selectedSchool}
+                onEventSelect={(event) => {
+                  setSelectedEventId(event._id);
+                  setEventTitle(event.title);
+                  setSelectedDate(new Date(event.date));
+                  setSelectedSchool(event.school);
+                }}
+              />
             </Box>
           </Paper>
         </Grid>
@@ -109,40 +161,20 @@ export default function Dashboard() {
               Admin Controls
             </Typography>
 
-            <Button
-              variant="contained"
-              component="label"
-              startIcon={<UploadFileIcon />}
-              color="secondary"
-            >
+            <Button variant="contained" component="label" startIcon={<UploadFileIcon />} color="secondary">
               Upload Event Excel Sheet
               <input type="file" hidden accept=".xlsx,.xls,.csv" />
             </Button>
 
-            <Button
-              variant="outlined"
-              color="primary"
-              startIcon={<EditIcon />}
-              onClick={handleEditClick}
-            >
+            <Button variant="outlined" color="primary" startIcon={<EditIcon />} onClick={handleEditClick}>
               Edit Selected Event
             </Button>
 
-            <Button
-              variant="outlined"
-              color="error"
-              startIcon={<DeleteIcon />}
-            >
+            <Button variant="outlined" color="error" startIcon={<DeleteIcon />}>
               Delete Selected Event
             </Button>
 
-            {/* Upload Excel for All Schools */}
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<UploadFileIcon />}
-              component="label"
-            >
+            <Button variant="contained" color="primary" startIcon={<UploadFileIcon />} component="label">
               Upload Excel for All Schools
               <input
                 type="file"
@@ -160,7 +192,6 @@ export default function Dashboard() {
               Submit All Schools Excel
             </Button>
 
-            {/* Create School */}
             <TextField
               label="New School Name"
               variant="outlined"
@@ -168,12 +199,7 @@ export default function Dashboard() {
               value={newSchoolName}
               onChange={(e) => setNewSchoolName(e.target.value)}
             />
-            <Button
-              variant="contained"
-              color="success"
-              startIcon={<SchoolIcon />}
-              onClick={handleCreateSchool}
-            >
+            <Button variant="contained" color="success" startIcon={<SchoolIcon />} onClick={handleCreateSchool}>
               Create School
             </Button>
           </Paper>
@@ -192,9 +218,11 @@ export default function Dashboard() {
               onChange={(e) => setSelectedSchool(e.target.value)}
               label="Select School"
             >
-              <MenuItem value="School A">School A</MenuItem>
-              <MenuItem value="School B">School B</MenuItem>
-              <MenuItem value="School C">School C</MenuItem>
+              {schoolList.map((school) => (
+                <MenuItem key={school._id} value={school._id}>
+                  {school.name}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
 
