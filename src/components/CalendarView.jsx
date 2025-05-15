@@ -1,18 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css';
-import { Box, Typography } from '@mui/material';
+import React, { useEffect, useState } from "react";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
+import { Box, Typography } from "@mui/material";
 import "./../../src/app.css";
-import API from '../api/axios';
+import API from "../api/axios";
 
 const formatDateKey = (date) => {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
 
-export default function CalendarView({ selectedDate, onDateChange, schoolId }) {
+export default function CalendarView({
+  selectedDate,
+  onDateChange,
+  schoolId,
+  onEventSelect,
+}) {
   const [events, setEvents] = useState({});
 
   useEffect(() => {
@@ -24,30 +29,24 @@ export default function CalendarView({ selectedDate, onDateChange, schoolId }) {
         }
 
         const response = await API.get(endpoint);
-
-        console.log('API response:', response);
-
-        // Adjust this depending on your actual backend response structure
-        // If response.data is array of events directly, use response.data
-        // If it's inside an object like { events: [...] }, then use response.data.events
-        const eventData = Array.isArray(response.data) ? response.data : response.data?.events || [];
+        const eventData = Array.isArray(response.data)
+          ? response.data
+          : response.data?.events || [];
 
         const mappedEvents = {};
-        eventData.forEach(event => {
-          // Adjust if your event date field is named differently
+        eventData.forEach((event) => {
           const date = new Date(event.date);
           const key = formatDateKey(date);
-
           if (mappedEvents[key]) {
-            mappedEvents[key] += `, ${event.title}`;
+            mappedEvents[key].push(event);
           } else {
-            mappedEvents[key] = event.title;
+            mappedEvents[key] = [event];
           }
         });
 
         setEvents(mappedEvents);
       } catch (error) {
-        console.error('Error fetching events:', error);
+        console.error("Error fetching events:", error);
       }
     };
 
@@ -59,8 +58,10 @@ export default function CalendarView({ selectedDate, onDateChange, schoolId }) {
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Typography variant="h5" fontWeight="bold" color="grey.700">
           {selectedDate
-            ? selectedDate.toLocaleString('default', { month: 'long' }).toUpperCase()
-            : 'SELECT A DATE'}
+            ? selectedDate
+                .toLocaleString("default", { month: "long" })
+                .toUpperCase()
+            : "SELECT A DATE"}
         </Typography>
       </Box>
 
@@ -70,17 +71,56 @@ export default function CalendarView({ selectedDate, onDateChange, schoolId }) {
           value={selectedDate}
           tileClassName={({ date }) => {
             const key = formatDateKey(date);
-            return events[key] ? 'highlight' : null;
+            return events[key] ? "highlight" : null;
           }}
           tileContent={({ date, view }) => {
             const key = formatDateKey(date);
-            const title = events[key];
-            return view === 'month' && title ? (
-              <div className="event-title">{title}</div>
+            const titles = events[key]?.map((e) => e.title).join(", ");
+            return view === "month" && titles ? (
+              <div className="event-title">{titles}</div>
             ) : null;
           }}
         />
       </Box>
+
+      {selectedDate && (
+        <Box mt={4}>
+          <Typography variant="h6" gutterBottom>
+            Events on {selectedDate.toDateString()}:
+          </Typography>
+          {/* List of events on the selected date */}
+          {events[formatDateKey(selectedDate)] &&
+            events[formatDateKey(selectedDate)].length > 0 && (
+              <Box sx={{ mt: 2 }}>
+                {events[formatDateKey(selectedDate)].map((event) => (
+                  <Box
+                    key={event._id}
+                    onClick={() => {
+                      console.log("Event clicked:", event);
+                      onEventSelect && onEventSelect(event);
+                    }}
+                    sx={{
+                      backgroundColor: "#f0f0f0",
+                      padding: 1,
+                      borderRadius: 1,
+                      marginBottom: 1,
+                      cursor: "pointer",
+                      "&:hover": { backgroundColor: "#e0e0e0" },
+                    }}
+                  >
+                    <Typography variant="subtitle2">{event.title}</Typography>
+                    <Typography variant="caption">
+                      {new Date(event.date).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            )}
+        </Box>
+      )}
     </Box>
   );
 }
