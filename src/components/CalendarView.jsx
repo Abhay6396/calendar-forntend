@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { Box, Typography } from "@mui/material";
-import "./../../src/app.css";
+import "../App.css";
 import API from "../api/axios";
 
 const formatDateKey = (date) => {
