@@ -15,6 +15,8 @@ import {
   Select,
   InputLabel,
   FormControl,
+  InputAdornment,
+  IconButton,
 } from "@mui/material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -22,7 +24,10 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import SchoolIcon from "@mui/icons-material/School";
+import LinkIcon from "@mui/icons-material/Link";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import Calendar from "./../CalendarView";
+import Navbar from "../Navbar";
 
 export default function Dashboard() {
   const [editOpen, setEditOpen] = useState(false);
@@ -34,6 +39,7 @@ export default function Dashboard() {
   const [schoolList, setSchoolList] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState("");
   const [eventsKey, setEventsKey] = useState(0);
+  const [generatedLink, setGeneratedLink] = useState("");
 
   const fetchSchools = async () => {
     try {
@@ -67,6 +73,7 @@ export default function Dashboard() {
     setSelectedSchool("");
     setSelectedDate(new Date());
     setEventTitle("");
+    setGeneratedLink("");
   };
 
   const handleSave = async () => {
@@ -84,7 +91,6 @@ export default function Dashboard() {
     }
 
     try {
-      console.log(selectedDate, selectedSchool, selectedEventId);
       const url = selectedEventId
         ? `/calendar/${selectedEventId}`
         : `/calendar/create`;
@@ -96,9 +102,9 @@ export default function Dashboard() {
       };
       let res;
       if (!selectedEventId) {
-         res = await API.post(url, payload);
+        res = await API.post(url, payload);
       } else {
-         res = await API.put(url, payload);
+        res = await API.put(url, payload);
       }
       alert(res.data.message || "Operation successful!");
       handleClose();
@@ -172,14 +178,48 @@ export default function Dashboard() {
     }
   };
 
+  // FIXED: Generate link handler
+  const handleGenerateLink = async () => {
+    if (!selectedSchool) {
+      alert("Please select a school to generate the link.");
+      return;
+    }
+
+    try {
+      // Assuming your backend sends relative link like `/calendar/xyz`
+      const res = await API.get(`/schools/generate-link/${selectedSchool}`);
+      console.log(res)
+      let link = res.data.link || "";
+
+      // If link is relative, prepend frontend origin
+      if (link && link.startsWith("/")) {
+        link = `${window.location.origin}${link}`;
+      }
+
+      setGeneratedLink(link);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to generate link");
+    }
+  };
+
+  // Copy link to clipboard
+  const handleCopyLink = () => {
+    if (!generatedLink) return;
+    navigator.clipboard.writeText(generatedLink);
+    alert("Link copied to clipboard!");
+  };
+
   return (
+    <>
+    <Navbar/>
     <Box sx={{ padding: 2 }}>
       <Typography variant="h4" gutterBottom fontWeight="bold" color="primary">
         Admin Dashboard
       </Typography>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={5}>
+      <Grid container spacing={3} sx={{ minWidth: "100%" }}>
+        <Grid item xs={15} md={3} sx={{ minWidth: "70%" }}>
           <Paper elevation={3} sx={{ padding: 2 }}>
             <Typography variant="h6" gutterBottom>
               Event Calendar
@@ -193,10 +233,10 @@ export default function Dashboard() {
                 label="Filter by School"
                 onChange={(e) => {
                   setSelectedSchool(e.target.value);
-                  console.log(selectedSchool);
                   setSelectedEventId("");
                   setEventTitle("");
                   setSelectedDate(new Date());
+                  setGeneratedLink("");
                 }}
               >
                 <MenuItem value="">All Schools</MenuItem>
@@ -208,7 +248,7 @@ export default function Dashboard() {
               </Select>
             </FormControl>
 
-            <Box sx={{ maxHeight: 400, overflow: "auto" }}>
+            <Box sx={{ maxHeight: 400, overflow: "auto", minWidth: "100%" }}>
               <Calendar
                 key={eventsKey}
                 selectedDate={selectedDate}
@@ -295,6 +335,40 @@ export default function Dashboard() {
             >
               Create School
             </Button>
+
+            {/* Generate Link */}
+            <Button
+              variant="contained"
+              color="info"
+              startIcon={<LinkIcon />}
+              onClick={handleGenerateLink}
+              disabled={!selectedSchool}
+            >
+              Generate School Link
+            </Button>
+
+            {generatedLink && (
+              <>
+                <TextField
+                  fullWidth
+                  label="Generated Link"
+                  value={generatedLink}
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  onClick={() => window.open(generatedLink, "_blank")}
+                  sx={{ mt: 1 }}
+                />
+                <Button
+                  variant="outlined"
+                  startIcon={<ContentCopyIcon />}
+                  onClick={handleCopyLink}
+                  sx={{ mt: 1, alignSelf: "flex-start" }}
+                >
+                  Copy Link
+                </Button>
+              </>
+            )}
           </Paper>
         </Grid>
       </Grid>
@@ -346,5 +420,7 @@ export default function Dashboard() {
         </DialogActions>
       </Dialog>
     </Box>
+    </>
+    
   );
 }

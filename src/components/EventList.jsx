@@ -1,40 +1,115 @@
-import { Box, Typography, IconButton } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
+import React, { useEffect, useState } from "react";
+import {
+  Box,
+  Typography,
+  IconButton,
+  CircularProgress,
+} from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
+import axios from 'axios';
 
-const events = [
-  { date: "May 3, 2016", time: "05:00 pm", desc: "Computer conference", color: "#00e5ff" },
-  { date: "May 9, 2016", time: "03:45 pm", desc: "A very important dinner with Anna", color: "#ff4081" },
-  { date: "May 12, 2016", time: "10:00 am", desc: "Product Design Congress", color: "#ba68c8" },
-  { date: "May 17, 2016", time: "09:30 am", desc: "Design Competition Submission", color: "#ffeb3b" },
-  { date: "May 22, 2016", time: "11:30 am", desc: "Go fishing with family", color: "#ce93d8" },
-  { date: "May 26, 2016", time: "01:30 pm", desc: "Playing basketball with George", color: "#40c4ff" },
-];
+const EventList = ({ schoolId, selectedDate }) => {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-export default function EventList() {
+  const month = selectedDate ? selectedDate.getMonth() : new Date().getMonth();
+  const year = selectedDate ? selectedDate.getFullYear() : new Date().getFullYear();
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      setLoading(true);
+      try {
+        let eventResponses = [];
+
+        // ✅ Fetch all-school events
+        const globalEventsRes = await axios.get('/calendar');
+        eventResponses.push(...globalEventsRes.data);
+
+        // ✅ If a specific school is selected, fetch its events too
+        if (schoolId) {
+          const schoolEventsRes = await axios.get(`/calendar/${schoolId}`);
+          eventResponses.push(...schoolEventsRes.data);
+        }
+
+        // ✅ Filter events by selected month and year
+        const filtered = eventResponses.filter((event) => {
+          const eventDate = new Date(event.date);
+          return (
+            eventDate.getMonth() === month && eventDate.getFullYear() === year
+          );
+        });
+
+        // Sort events by date
+        filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        setEvents(filtered);
+      } catch (error) {
+        console.error("Error fetching events:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, [schoolId, month, year]);
+
   return (
-    <Box width="300px" p={2} bgcolor="#fafafa" display="flex" flexDirection="column">
-      {events.map((event, index) => (
-        <Box key={index} display="flex" alignItems="flex-start" mb={2}>
-          <Box mt={1} width={10} height={10} bgcolor={event.color} borderRadius="50%" />
-          <Box ml={2} flex={1}>
-            <Typography variant="caption" color="gray">{`${event.date} ${event.time}`}</Typography>
-            <Typography fontSize={13}>{event.desc}</Typography>
-          </Box>
-          <IconButton size="small">
-            <DeleteIcon fontSize="small" />
-          </IconButton>
+    <Box
+      width="100%"
+      maxHeight="500px"
+      overflow="auto"
+      p={2}
+      bgcolor="#fafafa"
+      display="flex"
+      flexDirection="column"
+      borderRadius="8px"
+    >
+      {loading ? (
+        <Box textAlign="center" mt={2}>
+          <CircularProgress />
         </Box>
-      ))}
-      <Box mt="auto" textAlign="center">
-        <button style={{
-          backgroundColor: '#7e57c2',
-          color: 'white',
-          border: 'none',
-          padding: '8px 16px',
-          borderRadius: '4px',
-          cursor: 'pointer'
-        }}>Remove</button>
-      </Box>
+      ) : events.length === 0 ? (
+        <Typography variant="body2" color="textSecondary">
+          No events this month.
+        </Typography>
+      ) : (
+        events.map((event, index) => (
+          <Box key={event.id || index} display="flex" alignItems="flex-start" mb={2}>
+            <Box
+              mt={1}
+              width={10}
+              height={10}
+              bgcolor={event.color || "#90caf9"}
+              borderRadius="50%"
+            />
+            <Box ml={2} flex={1}>
+              <Typography variant="caption" color="gray">
+                {new Date(event.date).toLocaleDateString()}{" "}
+                {new Date(event.date).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </Typography>
+              <Typography fontSize={13}>
+                {event.title}
+                {event.school === null && (
+                  <Typography component="span" fontSize={12} color="textSecondary"> (All Schools)</Typography>
+                )}
+              </Typography>
+            </Box>
+            <IconButton
+              size="small"
+              onClick={() => {
+                // Optional delete handler
+              }}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        ))
+      )}
     </Box>
   );
-}
+};
+
+export default EventList;

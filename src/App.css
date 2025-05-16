@@ -96,12 +96,36 @@ body {
   color: white;
 }
 
-.event-title {
-  font-size: 10px;
-  margin-top: 4px;
-  text-align: center;
-  color: white;
-  padding: 0 4px;
-  word-break: break-word;
-  display: block;
+/* ✅ Updated this class to ensure it is not overwritten */
+.react-calendar__tile .event-title {
+  font-size: 10px !important;
+  margin-top: 4px !important;
+  text-align: center !important;
+  color: white !important;
+  padding: 0 4px !important;
+  word-break: break-word !important;
+  display: block !important;
 }
+.dashboard-container {
+  height: calc(100vh - 32px); /* Adjust if there's top padding/margin */
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-grid {
+  flex: 1;
+  display: flex;
+  height: 100%;
+}
+
+.dashboard-calendar {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-calendar-box {
+  flex: 1;
+  overflow: auto;
+}
+

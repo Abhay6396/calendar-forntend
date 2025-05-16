@@ -14,13 +14,17 @@ const Home = () => {
     setSelectedDate(newDate);
   };
   return (
-    <Box display="flex" flexDirection="column" height="100vh">
+    <>
+    <Navbar/>
+     <Box display="flex" flexDirection="column" height="100vh">
       <Box display="flex" flex={1}>
         <Sidebar selectedDate={selectedDate} onMonthClick={handleMonthChange} />
         <CalendarView selectedDate={selectedDate} onDateChange={setSelectedDate} />
-        <EventList />
+        {/* <EventList /> */}
       </Box>
     </Box>
+    </>
+   
   )
 }
 
