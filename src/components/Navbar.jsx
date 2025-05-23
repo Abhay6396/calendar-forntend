@@ -5,6 +5,14 @@ import { useNavigate } from 'react-router-dom';
 export default function Navbar() {
   const navigate = useNavigate();
 
+  const handleLogout = () => {
+    // Clear any auth-related storage (modify as needed)
+    localStorage.clear();
+    sessionStorage.clear();
+    // Redirect to login
+    navigate('/login');
+  };
+
   return (
     <AppBar position="static" sx={{ backgroundColor: '#7e57c2' }}>
       <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -25,9 +33,16 @@ export default function Navbar() {
           OMOTEC EVENT CALENDAR
         </Typography>
 
-        {/* Right side: Placeholder or logo */}
+        {/* Right side: Logout button */}
         <Box>
-          {/* <img src="/path-to-logo" alt="OMOTEC Logo" width="120" /> */}
+          <Button
+            color="inherit"
+            variant="text"
+            onClick={handleLogout}
+            sx={{ textTransform: 'none', fontWeight: 'bold' }}
+          >
+            Logout
+          </Button>
         </Box>
       </Toolbar>
     </AppBar>

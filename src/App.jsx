@@ -23,7 +23,7 @@ function App() {
           } 
         />
         <Route path="/school/:schoolId" element={<SchoolHome />} />
-        <Route path="/register" element={<RegisterPage />} /> 
+        {/* <Route path="/register" element={<RegisterPage />} />  */}
       </Routes>
     </Router>
   );
