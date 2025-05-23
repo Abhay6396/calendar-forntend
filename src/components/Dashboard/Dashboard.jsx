@@ -384,7 +384,7 @@ export default function Dashboard() {
                   if (!confirmDelete) return;
 
                   try {
-                    console.log("inside delete ",selectedSchool)
+                   
                     await API.delete(`/schools/${selectedSchool}`);
 
                     // ✅ Update frontend state after deletion
