@@ -142,6 +142,36 @@ export default function Dashboard() {
     }
   };
 
+  const handleDeleteSchool = async () => {
+    if (!selectedSchool) {
+      alert("Please select a school to delete.");
+      return;
+    }
+
+    const schoolName = schoolList.find((s) => s._id === selectedSchool)?.name;
+
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete school "${schoolName}" and all its events?`
+    );
+    if (!confirmDelete) return;
+
+    try {
+      await API.delete(`/schools/${selectedSchool}`);
+
+      // Update frontend state after deletion
+      setSchoolList((prev) =>
+        prev.filter((school) => school._id !== selectedSchool)
+      );
+      setSelectedSchool("");
+      setEventsKey((k) => k + 1); // Force Calendar refresh
+
+      alert("School deleted successfully");
+    } catch (error) {
+      console.error("Error deleting school:", error);
+      alert("Failed to delete school");
+    }
+  };
+
   const handleCreateSchool = async () => {
     if (!newSchoolName.trim()) {
       alert("Please enter a school name");
@@ -368,38 +398,7 @@ export default function Dashboard() {
                 variant="outlined"
                 color="error"
                 startIcon={<DeleteIcon />}
-                onClick={async () => {
-                  if (!selectedSchool) {
-                    alert("Please select a school to delete.");
-                    return;
-                  }
-
-                  const schoolName = schoolList.find(
-                    (s) => s._id === selectedSchool
-                  )?.name;
-
-                  const confirmDelete = window.confirm(
-                    `Are you sure you want to delete school "${schoolName}" and all its events?`
-                  );
-                  if (!confirmDelete) return;
-
-                  try {
-                   
-                    await API.delete(`/schools/${selectedSchool}`);
-
-                    // ✅ Update frontend state after deletion
-                    setSchoolList((prev) =>
-                      prev.filter((school) => school._id !== selectedSchool)
-                    );
-                    setSelectedSchool("");
-                    setEventsKey((k) => k + 1); // Force Calendar refresh
-
-                    alert("School deleted successfully");
-                  } catch (error) {
-                    console.error("Error deleting school:", error);
-                    alert("Failed to delete school");
-                  }
-                }}
+                onClick={handleDeleteSchool}
               >
                 Delete Selected School
               </Button>
